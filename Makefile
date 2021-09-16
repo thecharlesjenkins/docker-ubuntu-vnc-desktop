@@ -1,7 +1,7 @@
 .PHONY: build run
 
 # Default values for variables
-REPO  ?= dorowu/ubuntu-desktop-lxde-vnc
+REPO  ?= robojackets/software-training
 TAG   ?= latest
 # you can choose other base image versions
 IMAGE ?= ubuntu:20.04
@@ -11,7 +11,7 @@ FLAVOR ?= lxde
 # armhf or amd64
 ARCH ?= amd64
 
-# These files will be generated from teh Jinja templates (.j2 sources)
+# These files will be generated from the Jinja templates (.j2 sources)
 templates = Dockerfile rootfs/etc/supervisor/conf.d/supervisord.conf
 
 # Rebuild the container image
@@ -24,7 +24,7 @@ run:
 	docker run --privileged --rm \
 		-p 6080:80 -p 6081:443 \
 		-v ${PWD}:/src:ro \
-		-e USER=doro -e PASSWORD=mypassword \
+		-e USER=padowan -e PASSWORD=mypassword \
 		-e ALSADEV=hw:2,0 \
 		-e SSL_PORT=443 \
 		-e RELATIVE_URL_ROOT=approot \

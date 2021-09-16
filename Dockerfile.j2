@@ -35,13 +35,7 @@ RUN apt update \
     && apt autoclean -y \
     && apt autoremove -y \
     && rm -rf /var/lib/apt/lists/*
-RUN apt update \
-    && apt install -y gpg-agent \
-    && curl -LO https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && (dpkg -i ./google-chrome-stable_current_amd64.deb || apt-get install -fy) \
-    && curl -sSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add \
-    && rm google-chrome-stable_current_amd64.deb \
-    && rm -rf /var/lib/apt/lists/*
+
 {%if desktop == "lxde" %}
 {%endif%}
 {%if desktop == "lxqt" %}
@@ -82,8 +76,80 @@ RUN apt-get update \
     && apt-get autoclean -y \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /var/cache/apt/* /tmp/a.txt /tmp/b.txt
+    && rm -rf /var/cache/apt/* /tmp/a.txt /tmp/b.
+    
 
+# install packages
+RUN apt-get update && apt-get install -q -y --no-install-recommends \
+    dirmngr \
+    gnupg2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# setup sources.list
+RUN echo "deb http://packages.ros.org/ros/ubuntu focal main" > /etc/apt/sources.list.d/ros1-latest.list
+
+# setup keys
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+
+# setup environment
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+
+ENV ROS_DISTRO noetic
+
+# install ROS Noetic (Roboracing)
+RUN apt update\
+    && apt install -y ros-noetic-desktop-full
+
+# RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+
+RUN apt update \
+    && apt install -y python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential
+
+RUN apt update \
+    && apt install -y python3-rosdep\
+    && rosdep init \
+    && rosdep update
+
+RUN apt update \
+    && apt install -y terminator
+
+# install ROS Foxy
+RUN apt update && apt install -y locales \
+    && locale-gen en_US en_US.UTF-8 \
+    && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
+    && export LANG=en_US.UTF-8
+
+RUN apt update && apt install -y curl gnupg2 lsb-release \
+    && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key  -o /usr/share/keyrings/ros-archive-keyring.gpg
+
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+RUN apt update \
+    && apt install -y ros-foxy-desktop \
+    && apt install -y ros-foxy-ros-base
+
+# RUN echo "source /opt/ros/foxy/setup.bash" >> ~/.bashrc
+
+# Install Galactic
+RUN apt update && apt install -y software-properties-common && add-apt-repository universe
+
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+RUN apt update && apt install -y ros-galactic-desktop
+
+# Install RoboRacing repository
+RUN apt install -y gnutls-bin && mkdir -p /home/padowan/catkin_ws/src && cd /home/padowan/catkin_ws/src && git clone https://github.com/RoboJackets/roboracing-software.git && cd roboracing-software && git submodule init && git submodule update
+
+RUN cd /home/padowan/catkin_ws && apt install -y python3-rosdep python-is-python3 python3-catkin-tools --yes \
+    && rosdep install --from-path src --ignore-src -y -r
+
+RUN apt install -y ros-noetic-costmap-2d ros-noetic-effort-controllers ros-noetic-robot-localization \
+    && apt update && apt install -y python3-pip && pip install pyyaml==5.1.2 
+
+
+# Add desktop shortcuts
+COPY desktop/ /home/padowan/Desktop
 
 ################################################################################
 # builder
