@@ -121,7 +121,7 @@ RUN apt update \
     && apt install -y ros-foxy-desktop \
     && apt install -y ros-foxy-ros-base
 
-RUN echo "source /opt/ros/foxy/setup.bash" >> ~/.bashrc
+# RUN echo "source /opt/ros/foxy/setup.bash" >> ~/.bashrc
 
 # Install Galactic
 RUN apt update && apt install -y software-properties-common && add-apt-repository universe
@@ -137,8 +137,11 @@ RUN cd /home/padowan/catkin_ws && apt install -y python3-rosdep python-is-python
     && rosdep install --from-path src --ignore-src -y -r
 
 RUN apt install -y ros-noetic-costmap-2d ros-noetic-effort-controllers ros-noetic-robot-localization \
-    && apt update && apt install -y python3-pip && pip install pyyaml==5.1.2 
+    && apt update && apt install -y python3-pip && pip install pyyaml==5.1.2
 
+
+# Do a catkin build
+RUN cd /home/padowan/catkin_ws && catkin build
 
 # Add desktop shortcuts
 COPY desktop/ /home/padowan/Desktop

@@ -145,8 +145,11 @@ RUN cd /home/padowan/catkin_ws && apt install -y python3-rosdep python-is-python
     && rosdep install --from-path src --ignore-src -y -r
 
 RUN apt install -y ros-noetic-costmap-2d ros-noetic-effort-controllers ros-noetic-robot-localization \
-    && apt update && apt install -y python3-pip && pip install pyyaml==5.1.2 
+    && apt update && apt install -y python3-pip && pip install pyyaml==5.1.2
 
+
+# Do a catkin build
+RUN cd /home/padowan/catkin_ws && catkin build
 
 # Add desktop shortcuts
 COPY desktop/ /home/padowan/Desktop
