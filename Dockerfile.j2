@@ -149,7 +149,7 @@ RUN apt install -y ros-noetic-costmap-2d ros-noetic-effort-controllers ros-noeti
 
 
 # Do a catkin build
-RUN cd /home/padowan/catkin_ws && catkin build
+RUN cd /home/padowan/catkin_ws && . /opt/ros/noetic/setup.sh && catkin build
 
 # Add desktop shortcuts
 COPY desktop/ /home/padowan/Desktop
