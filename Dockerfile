@@ -106,6 +106,8 @@ RUN apt update \
 RUN apt update \
     && apt install -y terminator
 
+RUN mkdir -p /home/padowan/catkin_ws/src
+
 # install ROS Foxy
 RUN apt update && apt install -y locales \
     && locale-gen en_US en_US.UTF-8 \
@@ -121,6 +123,12 @@ RUN apt update \
     && apt install -y ros-foxy-desktop \
     && apt install -y ros-foxy-ros-base
 
+RUN apt update && apt install -y wget && wget -qO - https://stslaptstorage.z13.web.core.windows.net/pubkey.txt | sudo apt-key add -
+RUN apt-add-repository "deb https://stslaptstorage.z13.web.core.windows.net/ focal main"
+RUN apt install -y ros-foxy-stsl-desktop
+
+RUN cd /home/padowan/catkin_ws && git clone https://github.com/RoboJackets/software-training.git
+
 # RUN echo "source /opt/ros/foxy/setup.bash" >> ~/.bashrc
 
 # Install Galactic
@@ -131,7 +139,7 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/r
 RUN apt update && apt install -y ros-galactic-desktop
 
 # Install RoboRacing repository
-RUN apt install -y gnutls-bin && mkdir -p /home/padowan/catkin_ws/src && cd /home/padowan/catkin_ws/src && git clone https://github.com/RoboJackets/roboracing-software.git && cd roboracing-software && git submodule init && git submodule update
+RUN apt install -y gnutls-bin && cd /home/padowan/catkin_ws/src && git clone https://github.com/RoboJackets/roboracing-software.git && cd roboracing-software && git submodule init && git submodule update
 
 RUN cd /home/padowan/catkin_ws && apt install -y python3-rosdep python-is-python3 python3-catkin-tools --yes \
     && rosdep install --from-path src --ignore-src -y -r

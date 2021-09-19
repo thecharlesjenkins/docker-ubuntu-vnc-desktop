@@ -31,6 +31,7 @@ run:
 		-v ${PWD}/ssl:/etc/nginx/ssl \
 		--device /dev/snd \
 		--name ubuntu-desktop-lxde-test \
+		--hostname software-training
 		$(REPO):$(TAG)
 
 # Connect inside the running container for debugging
