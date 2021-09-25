@@ -77,6 +77,8 @@ RUN apt update && apt install -y locales \
     && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
     && export LANG=en_US.UTF-8
 
+ENV ROS_DISTRO foxy
+
 RUN apt update && apt install -y curl gnupg2 lsb-release \
     && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key  -o /usr/share/keyrings/ros-archive-keyring.gpg
 
@@ -84,18 +86,17 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/r
 
 RUN apt update \
     && apt install -y ros-foxy-desktop \
-    && apt install -y ros-foxy-ros-base
-
-RUN apt update && apt install -y git
+    && apt install -y ros-foxy-ros-base 
+    
+RUN apt update && apt install -y git python3-colcon-common-extensions python3-rosdep
 
 # RUN apt update && apt install -y wget && wget -qO - https://stslaptstorage.z13.web.core.windows.net/pubkey.txt | sudo apt-key add -
 # RUN apt-add-repository "deb https://stslaptstorage.z13.web.core.windows.net/ focal main"
 # # RUN apt install -y ros-foxy-stsl-desktop
 
 RUN cd /home/padowan/ && git clone https://github.com/RoboJackets/stsl.git
-RUN apt install -y python3-rosdep
 RUN /bin/bash -c "source /opt/ros/foxy/setup.bash" && cd /home/padowan/stsl && apt-get update && rosdep init --rosdistro=foxy && rosdep update --rosdistro=foxy && rosdep install --from-paths . --ignore-src -y --skip-keys="libgpiod2 libgpiod-dev"
-RUN /bin/bash -c "source /opt/ros/foxy/setup.bash" && cd /home/padowan/stsl && colcon build --packages-skip traini_onboard_interface
+RUN /bin/bash -c ". /opt/ros/foxy/setup.bash" && cd /home/padowan/stsl && colcon build --packages-skip traini_onboard_interface
 
 RUN cd /home/padowan/training_ws/src && git clone https://github.com/RoboJackets/software-training.git
 RUN apt install -y python3-colcon-common-extensions
