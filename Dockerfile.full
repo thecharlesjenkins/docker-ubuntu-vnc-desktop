@@ -3,15 +3,8 @@
 ################################################################################
 # base system
 ################################################################################
-{%if arch == "amd64"%}
 FROM {{image}} as system
-{%elif arch == "armhf"%}
-# qemu helper for arm build
-FROM {{image}} as amd64
 RUN apt update && apt install -y qemu-user-static
-FROM arm32v7/{{image}} as system
-COPY --from=amd64 /usr/bin/qemu-arm-static /usr/bin/
-{%endif%}
 
 RUN sed -i 's#http://archive.ubuntu.com/ubuntu/#mirror://mirrors.ubuntu.com/mirrors.txt#' /etc/apt/sources.list;
 
@@ -64,6 +57,21 @@ RUN apt update \
     && mkdir /usr/local/ffmpeg \
     && ln -s /usr/bin/ffmpeg /usr/local/ffmpeg/ffmpeg
 
+# python library
+COPY rootfs/usr/local/lib/web/backend/requirements.txt /tmp/
+RUN apt-get update \
+    && dpkg-query -W -f='${Package}\n' > /tmp/a.txt \
+    && apt-get install -y python3-pip python3-dev build-essential \
+	&& pip3 install setuptools wheel && pip3 install -r /tmp/requirements.txt \
+    && ln -s /usr/bin/python3 /usr/local/bin/python \
+    && dpkg-query -W -f='${Package}\n' > /tmp/b.txt \
+    && apt-get remove -y `diff --changed-group-format='%>' --unchanged-group-format='' /tmp/a.txt /tmp/b.txt | xargs` \
+    && apt-get autoclean -y \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/apt/* /tmp/a.txt /tmp/b.
+    
+
 # install packages
 RUN apt-get update && apt-get install -q -y --no-install-recommends \
     dirmngr \
@@ -79,22 +87,6 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C1CF6E31E6
 # setup environment
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
-
-ENV ROS_DISTRO noetic
-
-# install ROS Noetic (Roboracing)
-RUN apt update\
-    && apt install -y ros-noetic-desktop-full
-
-# RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
-
-RUN apt update \
-    && apt install -y python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential
-
-RUN apt update \
-    && apt install -y python3-rosdep\
-    && rosdep init \
-    && rosdep update
 
 RUN apt update \
     && apt install -y terminator
@@ -118,11 +110,9 @@ RUN apt update \
 
 RUN apt update && apt install -y wget && wget -qO - https://stslaptstorage.z13.web.core.windows.net/pubkey.txt | sudo apt-key add -
 RUN apt-add-repository "deb https://stslaptstorage.z13.web.core.windows.net/ focal main"
-RUN apt install -y ros-foxy-stsl-desktop
+RUN apt install -y ros-foxy-stsl-desktop && apt install python3-colcon-common-extensions
 
 RUN cd /home/padowan/training_ws/src && git clone https://github.com/RoboJackets/software-training.git
-
-# RUN echo "source /opt/ros/foxy/setup.bash" >> ~/.bashrc
 
 # Install Galactic
 RUN apt update && apt install -y software-properties-common && add-apt-repository universe
@@ -132,6 +122,17 @@ RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/r
 RUN apt update && apt install -y ros-galactic-desktop
 
 # Install RoboRacing repository
+RUN apt update\
+    && apt install -y ros-noetic-desktop-full
+
+RUN apt update \
+    && apt install -y python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential
+
+RUN apt update \
+    && apt install -y python3-rosdep\
+    && rosdep init \
+    && rosdep update
+
 RUN mkdir -p /home/padowan/roboracing_catkin_ws/src
 RUN apt install -y gnutls-bin && cd /home/padowan/roboracing_catkin_ws/src && git clone https://github.com/RoboJackets/roboracing-software.git && cd roboracing-software && git submodule init && git submodule update
 
@@ -156,9 +157,6 @@ RUN cd /home/padowan/robonav_catkin_ws/src && git clone https://github.com/RoboJ
 RUN cd /home/padowan/robonav_catkin_ws/src/igvc-software && ./install_dependencies.sh
 RUN cd /home/padowan/robonav_catkin_ws && rosdep install --from-paths src --ignore-src -r -y
 
-# Do a catkin build
-# RUN cd /home/padowan/roboracing_catkin_ws && . /opt/ros/noetic/setup.sh && catkin build
-
 # Install sublime
 RUN wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | apt-key add - \
     && apt-get install -y apt-transport-https \
@@ -179,6 +177,22 @@ FROM {{image}} as builder
 RUN sed -i 's#http://archive.ubuntu.com/ubuntu/#mirror://mirrors.ubuntu.com/mirrors.txt#' /etc/apt/sources.list;
 {% endif %}
 
+RUN apt update \
+    && apt install -y --no-install-recommends curl ca-certificates gnupg patch apt-transport-https wget gnupg-agent
+
+# nodejs and yarn
+RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+RUN echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+RUN apt update && apt install -y yarn
+RUN apt-get update && apt-get install -y nodejs 
+
+# build frontend
+COPY web /src/web
+RUN cd /src/web \
+    && yarn \
+    && yarn build
+RUN sed -i 's#app/locale/#novnc/app/locale/#' /src/web/dist/static/novnc/app/ui.js
+
 {%if arch == "armhf"%}
 RUN cd /src/web/dist/static/novnc && patch -p0 < /src/web/novnc-armhf-1.patch
 {%endif%}
@@ -189,7 +203,10 @@ RUN cd /src/web/dist/static/novnc && patch -p0 < /src/web/novnc-armhf-1.patch
 FROM system
 LABEL maintainer="fcwu.tw@gmail.com"
 
+COPY --from=builder /src/web/dist/ /usr/local/lib/web/frontend/
 COPY rootfs /
+RUN ln -sf /usr/local/lib/web/frontend/static/websockify /usr/local/lib/web/frontend/static/novnc/utils/websockify && \
+	chmod +x /usr/local/lib/web/frontend/static/websockify/run
 
 EXPOSE 80
 WORKDIR /root

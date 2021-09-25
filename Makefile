@@ -2,7 +2,7 @@
 
 # Default values for variables
 REPO  ?= thecharlesjenkins/robojackets-software-training
-TAG   ?= latest
+TAG   ?= m1_mini
 # you can choose other base image versions
 IMAGE ?= ubuntu:20.04
 # IMAGE ?= nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
@@ -16,7 +16,7 @@ templates = Dockerfile rootfs/etc/supervisor/conf.d/supervisord.conf
 
 # Rebuild the container image
 build: $(templates)
-	docker build -t $(REPO):$(TAG) .
+	docker buildx build --platform linux/${ARCH} -t $(REPO):$(TAG) --load .
 
 # Test run the container
 # the local dir will be mounted under /src read-only

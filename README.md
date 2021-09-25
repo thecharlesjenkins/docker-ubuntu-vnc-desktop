@@ -159,6 +159,12 @@ Dockerfile and configuration are re-generate if they do not exist. Or you may fo
 5. firefox/chrome crash (/dev/shm), https://github.com/fcwu/docker-ubuntu-vnc-desktop/issues/112
 6. resize display size without destroying container, https://github.com/fcwu/docker-ubuntu-vnc-desktop/issues/115#issuecomment-522426037
 
+## Cross Build
+docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+docker buildx create --name cibuilder --driver docker-container --use
+docker buildx ls
+docker buildx inspect --bootstrap
+
 ## License
 
 See the LICENSE file for details.
