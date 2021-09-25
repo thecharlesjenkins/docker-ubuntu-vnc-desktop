@@ -16,7 +16,7 @@ templates = Dockerfile rootfs/etc/supervisor/conf.d/supervisord.conf
 
 # Rebuild the container image
 build: $(templates)
-	docker buildx build --platform linux/${ARCH} -t $(REPO):$(TAG) --load .
+	docker buildx build --platform linux/${ARCH} -t $(REPO):$(TAG) --push .
 
 # Test run the container
 # the local dir will be mounted under /src read-only
